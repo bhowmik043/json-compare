@@ -36,4 +36,14 @@ public class JsonUtils {
         }
         return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(toJson(content));
     }
+
+    public static String getChildFlatPath(String flatPath, String value) {
+        return flatPath!=null?flatPath+"."+value:value;
+    }
+    public static String getChildFlatPath(String flatPath, Integer value) {
+        return flatPath!=null?flatPath+".["+value+"]":String.valueOf(value);
+    }
+    public static String cleanPathRegex(String key) {
+        return key.replaceAll("\\[.*?]", "[*]");
+    }
 }

@@ -4,19 +4,21 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.json.compare.CompareMode;
 import io.json.compare.JsonComparator;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 class JsonValueMatcher extends AbstractJsonMatcher {
 
-    JsonValueMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes) {
-        super(expected, actual, comparator, compareModes);
+    JsonValueMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath, String flatPath) {
+        super(expected, actual, comparator, compareModes, schemaPath, flatPath);
     }
 
     @Override
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
+    System.out.println("=============>"+flatPath);
         String diff = System.lineSeparator() + "Expected %s: %s But got: %s";
 
         if (expected.isNull() && !actual.isNull()) {

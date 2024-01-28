@@ -114,7 +114,7 @@ class JsonDiffsAsListTests {
         String expected = "{\"name\":\".*test\",\"records\":[3,1]}";
         String actual = "{\"name\":\"test\",\"records\":[1,2,3], \"otherRecords\":[4]}";
         List<String> diffs = JSONCompare.diffs(expected, actual, new JsonCustomComparatorDiffTests.CustomComparator(),
-                new HashSet<>(Arrays.asList(CompareMode.JSON_OBJECT_NON_EXTENSIBLE, CompareMode.JSON_ARRAY_NON_EXTENSIBLE)));
+                new HashSet<>(Arrays.asList(CompareMode.JSON_OBJECT_NON_EXTENSIBLE, CompareMode.JSON_ARRAY_NON_EXTENSIBLE)),null);
         assertEquals(3, diffs.size());
         assertTrue(diffs.get(0).matches("(?s).*name ->.*Expected value: \".*test\" But got: \"test\".*"));
         assertTrue(diffs.get(1).matches("(?s).*records ->.*Actual JSON ARRAY has extra elements.*"));

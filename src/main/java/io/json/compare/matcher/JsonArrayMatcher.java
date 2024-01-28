@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.json.compare.CompareMode;
 import io.json.compare.JSONCompare;
 import io.json.compare.JsonComparator;
+import io.json.compare.util.JsonUtils;
 import io.json.compare.util.MessageUtil;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -16,19 +19,19 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
 
     private final Set<Integer> matchedPositions = new HashSet<>();
 
-    JsonArrayMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes) {
-        super(expected, actual, comparator, compareModes);
+    JsonArrayMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath, String flatPath) {
+        super(expected, actual, comparator, compareModes, schemaPath, flatPath);
     }
 
     @Override
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
-
+    System.out.println("=============>"+flatPath);
         for (int i = 0; i < expected.size(); i++) {
             JsonNode expElement = expected.get(i);
             UseCase useCase = getUseCase(expElement);
             if (isJsonPathNode(expElement)) {
-                diffs.addAll(new JsonMatcher(expElement, actual, comparator, compareModes).match());
+                diffs.addAll(new JsonMatcher(expElement, actual, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,i)).match());
             } else {
                 diffs.addAll(matchWithJsonArray(i, expElement, useCase, actual));
             }
@@ -53,11 +56,28 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
                     break;
                 }
             }
+
+            if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
+                try{
+                    JsonNode schemaJson = getSchemaJson();
+                    JsonNode primaryKey = schemaJson.get(JsonUtils.cleanPathRegex(flatPath));
+                    if (primaryKey != null) {
+                        JsonNode expPrimaryKeyValue = expElement.get(primaryKey.asText());
+                        JsonNode actPrimaryKeyValue = actualArray.get(j).get(primaryKey.asText());
+                            if (!expPrimaryKeyValue.equals(actPrimaryKeyValue)) {
+                                continue;
+                            }
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
             List<String> elementDiffs;
             switch (useCase) {
                 case MATCH:
                     JsonNode actElement = actualArray.get(j);
-                    elementDiffs = new JsonMatcher(expElement, actElement, comparator, compareModes).match();
+                    elementDiffs = new JsonMatcher(expElement, actElement, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,j)).match();
                     if (elementDiffs.isEmpty()) {
                         matchedPositions.add(j);
                         return Collections.emptyList();
@@ -78,7 +98,7 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
                 case DO_NOT_MATCH:
                     actElement = actualArray.get(j);
                     if (areOfSameType(expElement, actElement)) {
-                        elementDiffs = new JsonMatcher(expElement, actElement, comparator, compareModes).match();
+                        elementDiffs = new JsonMatcher(expElement, actElement, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,j)).match();
                         if (!elementDiffs.isEmpty()) {
                             diffs.add("Expected element from position " + (expPosition + 1)
                                     + " was FOUND:" + System.lineSeparator() + MessageUtil.cropL(JSONCompare.prettyPrint(expElement)));

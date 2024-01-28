@@ -11,6 +11,7 @@ import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import io.json.compare.CompareMode;
 import io.json.compare.JsonComparator;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -29,8 +30,8 @@ class JsonPathMatcher extends AbstractJsonMatcher {
 
     private final String jsonPath;
 
-    JsonPathMatcher(String jsonPath, JsonNode expectedValue, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes) {
-        super(expectedValue, actual, comparator, compareModes);
+    JsonPathMatcher(String jsonPath, JsonNode expectedValue, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath, String flatPath) {
+        super(expectedValue, actual, comparator, compareModes, schemaPath, flatPath);
         this.jsonPath = jsonPath;
     }
 
@@ -38,7 +39,7 @@ class JsonPathMatcher extends AbstractJsonMatcher {
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
         JsonNode result = MAPPER.convertValue(PARSE_CONTEXT.parse(actual).read(jsonPath), JsonNode.class);
-        List<String> jsonPathDiffs = new JsonMatcher(expected, result, comparator, compareModes).match();
+        List<String> jsonPathDiffs = new JsonMatcher(expected, result, comparator, compareModes, schemaPath, flatPath).match();
         jsonPathDiffs.forEach(diff -> diffs.add(String.format("Json path '%s' -> Expected json path result:" +
                         System.lineSeparator() + "%s" + System.lineSeparator() + "But got:" +
                         System.lineSeparator() + "%s" + System.lineSeparator() + "________diffs________" + System.lineSeparator() + "%s",

@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.json.compare.CompareMode;
 import io.json.compare.JsonComparator;
+import io.json.compare.util.JsonUtils;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -18,14 +20,15 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
 
     private final Set<String> matchedFieldNames = new HashSet<>();
 
-    JsonObjectMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes) {
-        super(expected, actual, comparator, compareModes);
+    JsonObjectMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath, String flatPath) {
+        super(expected, actual, comparator, compareModes, schemaPath, flatPath);
     }
 
     @Override
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
 
+    System.out.println("=============>"+flatPath);
         Iterator<Map.Entry<String, JsonNode>> it = expected.fields();
         while (it.hasNext()) {
             Map.Entry<String, JsonNode> entry = it.next();
@@ -41,6 +44,7 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
             switch (fieldUseCase) {
                 case MATCH_ANY:
                 case MATCH:
+//                    jsonPathExpression.ifPresent(System.out::println);
                     if (!jsonPathExpression.isPresent()) {
                         if (candidateEntries.isEmpty()) {
                             diffs.add(String.format("Field '%s' was NOT FOUND", expectedField));
@@ -49,7 +53,7 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                         }
                     } else {
                         try {
-                            diffs.addAll(new JsonPathMatcher(jsonPathExpression.get(), expectedValue, actual, comparator, compareModes).match());
+                            diffs.addAll(new JsonPathMatcher(jsonPathExpression.get(), expectedValue, actual, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,expectedField)).match());
                         } catch (PathNotFoundException e) {
                             diffs.add(String.format("Json path '%s' -> %s", jsonPathExpression.get(), e.getMessage()));
                         }
@@ -67,7 +71,7 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                         }
                     } else {
                         try {
-                            new JsonPathMatcher(jsonPathExpression.get(), expectedValue, actual, comparator, compareModes).match();
+                            new JsonPathMatcher(jsonPathExpression.get(), expectedValue, actual, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,expectedField)).match();
                         } catch (PathNotFoundException e) {
                             break;
                         }
@@ -96,7 +100,7 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
             }
 
             JsonNode candidateValue = candidateEntry.getValue();
-            List<String> candidateDiffs = new JsonMatcher(expectedValue, candidateValue, comparator, compareModes).match();
+            List<String> candidateDiffs = new JsonMatcher(expectedValue, candidateValue, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,expectedField)).match();
             if (candidateDiffs.isEmpty()) {
                 matchedFieldNames.add(candidateField);
                 return Collections.emptyList();

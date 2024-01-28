@@ -6,6 +6,7 @@ import io.json.compare.util.JsonUtils;
 import org.junit.jupiter.api.AssertionFailureBuilder;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
@@ -24,11 +25,11 @@ public class JSONCompare {
             "For disabling case-sensitivity, use (?i) and (?-i) modifiers. Or, use a custom comparator.";
 
     public static void assertMatches(Object expected, Object actual) {
-        assertMatches(expected, actual, null, null, null);
+        assertMatches(expected, actual, null, null, null, null);
     }
 
     public static void assertNotMatches(Object expected, Object actual) {
-        assertNotMatches(expected, actual, null, null, null);
+        assertNotMatches(expected, actual, null, null, null, null);
     }
 
     public static void assertMatches(Object expected, Object actual, Set<CompareMode> compareModes) {
@@ -37,6 +38,14 @@ public class JSONCompare {
 
     public static void assertNotMatches(Object expected, Object actual, Set<CompareMode> compareModes) {
         assertNotMatches(expected, actual, null, compareModes);
+    }
+
+    public static void assertMatches(Object expected, Object actual, Set<CompareMode> compareModes, Path schemaPath) {
+        assertMatches(expected, actual, null, compareModes, schemaPath, null);
+    }
+
+    public static void assertNotMatches(Object expected, Object actual, Set<CompareMode> compareModes, Path schemaPath) {
+        assertNotMatches(expected, actual, null, compareModes, schemaPath, null);
     }
 
     public static void assertMatches(Object expected, Object actual, JsonComparator comparator) {
@@ -48,26 +57,26 @@ public class JSONCompare {
     }
 
     public static void assertMatches(Object expected, Object actual, JsonComparator comparator, Set<CompareMode> compareModes) {
-        assertMatches(expected, actual, comparator, compareModes, null);
+        assertMatches(expected, actual, comparator, compareModes, null, null);
     }
 
     public static void assertNotMatches(Object expected, Object actual, JsonComparator comparator, Set<CompareMode> compareModes) {
-        assertNotMatches(expected, actual, comparator, compareModes, null);
+        assertNotMatches(expected, actual, comparator, compareModes, null, null);
     }
 
     public static void assertMatches(Object expected, Object actual, Set<CompareMode> compareModes, String message) {
-        assertMatches(expected, actual, null, compareModes, message);
+        assertMatches(expected, actual, null, compareModes, null ,message);
     }
 
     public static void assertNotMatches(Object expected, Object actual, Set<CompareMode> compareModes, String message) {
-        assertNotMatches(expected, actual, null, compareModes, message);
+        assertNotMatches(expected, actual, null, compareModes, null, message);
     }
 
-    public static void assertMatches(Object expected, Object actual, JsonComparator comparator, Set<CompareMode> compareModes, String message) {
+    public static void assertMatches(Object expected, Object actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath, String message) {
         JsonNode expectedJson = toJson(expected);
         JsonNode actualJson = toJson(actual);
         List<String> diffs = new JsonMatcher(expectedJson, actualJson,
-                comparator == null ? new DefaultJsonComparator(compareModes) : comparator, compareModes).match();
+                comparator == null ? new DefaultJsonComparator(compareModes) : comparator, compareModes, schemaPath, null).match();
         if (!diffs.isEmpty()) {
             String defaultMessage = String.format("FOUND %s DIFFERENCE(S):%s%s%s",
                     diffs.size(), System.lineSeparator(), diffs.stream().map(diff ->
@@ -81,11 +90,11 @@ public class JSONCompare {
         }
     }
 
-    public static void assertNotMatches(Object expected, Object actual, JsonComparator comparator, Set<CompareMode> compareModes, String message) {
+    public static void assertNotMatches(Object expected, Object actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath, String message) {
         JsonNode expectedJson = toJson(expected);
         JsonNode actualJson = toJson(actual);
         List<String> diffs = new JsonMatcher(expectedJson, actualJson,
-                comparator == null ? new DefaultJsonComparator(compareModes) : comparator, compareModes).match();
+                comparator == null ? new DefaultJsonComparator(compareModes) : comparator, compareModes, schemaPath, null).match();
         if (!diffs.isEmpty()) {
             return;
         }
@@ -96,22 +105,25 @@ public class JSONCompare {
     }
 
     public static List<String> diffs(Object expected, Object actual) {
-        return diffs(expected, actual, null, null);
+        return diffs(expected, actual, null, null, null);
     }
 
     public static List<String> diffs(Object expected, Object actual, Set<CompareMode> compareModes) {
-        return diffs(expected, actual, null, compareModes);
+        return diffs(expected, actual, null, compareModes, null);
+    }
+
+    public static List<String> diffs(Object expected, Object actual, Set<CompareMode> compareModes, Path schemaPath) {
+        return diffs(expected, actual, null, compareModes, schemaPath);
     }
 
     public static List<String> diffs(Object expected, Object actual, JsonComparator comparator) {
-        return diffs(expected, actual, comparator, null);
+        return diffs(expected, actual, comparator, null, null);
     }
 
-    public static List<String> diffs(Object expected, Object actual, JsonComparator comparator, Set<CompareMode> compareModes) {
+    public static List<String> diffs(Object expected, Object actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath) {
         JsonNode expectedJson = toJson(expected);
         JsonNode actualJson = toJson(actual);
-        return new JsonMatcher(expectedJson, actualJson,
-                comparator == null ? new DefaultJsonComparator(compareModes) : comparator, compareModes).match();
+        return new JsonMatcher(expectedJson, actualJson, comparator == null ? new DefaultJsonComparator(compareModes) : comparator, compareModes, schemaPath, null).match();
     }
 
     public static String prettyPrint(JsonNode jsonNode) {

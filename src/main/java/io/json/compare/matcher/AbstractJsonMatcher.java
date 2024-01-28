@@ -4,7 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.json.compare.CompareMode;
 import io.json.compare.DefaultJsonComparator;
 import io.json.compare.JsonComparator;
+import io.json.compare.util.JsonUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -15,17 +19,21 @@ abstract class AbstractJsonMatcher {
 
     protected static final String JSON_PATH_EXP_PREFIX = "#(";
     protected static final String JSON_PATH_EXP_SUFFIX = ")";
-
+    protected static JsonNode schemaJson = null;
     protected final JsonComparator comparator;
     protected final Set<CompareMode> compareModes;
     protected final JsonNode expected;
     protected final JsonNode actual;
+    protected final Path schemaPath;
+    protected final String flatPath;
 
-    AbstractJsonMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes) {
+    AbstractJsonMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath, String flatPath) {
         this.expected = expected;
         this.actual = actual;
         this.compareModes = compareModes == null ? new HashSet<>() : compareModes;
         this.comparator = comparator == null ? new DefaultJsonComparator(this.compareModes) : comparator;
+        this.schemaPath = schemaPath;
+        this.flatPath = flatPath;
     }
 
     protected abstract List<String> match();
@@ -130,6 +138,13 @@ abstract class AbstractJsonMatcher {
     protected static boolean areOfSameType(JsonNode expNode, JsonNode actNode) {
         return (isValueNode(expNode) & isValueNode(actNode)) || (isJsonObject(expNode) & isJsonObject(actNode))
                 || (isJsonArray(expNode) & isJsonArray(actNode) || isJsonPathNode(expNode));
+    }
+
+    protected JsonNode getSchemaJson() throws IOException {
+        if(this.schemaPath != null && schemaJson == null) {
+            schemaJson = JsonUtils.toJson(new String(Files.readAllBytes(this.schemaPath)));
+        }
+        return schemaJson;
     }
 
     protected enum UseCase {

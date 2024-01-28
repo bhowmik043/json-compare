@@ -44,7 +44,7 @@ public class JSONValueNodeCompareTests {
     public void compareStringWithTextNode() {
         String expectedAsString = "\"some val\"";
         TextNode actual = new TextNode("some val");
-        JSONCompare.assertMatches(expectedAsString, actual, null, null, null);
+        JSONCompare.assertMatches(expectedAsString, actual, null, null, null, null);
     }
 
     @Test
