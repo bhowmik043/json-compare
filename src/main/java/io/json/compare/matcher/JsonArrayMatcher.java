@@ -26,7 +26,7 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
     @Override
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
-    System.out.println("=============>"+flatPath);
+//    System.out.println("=============>"+flatPath);
         for (int i = 0; i < expected.size(); i++) {
             JsonNode expElement = expected.get(i);
             UseCase useCase = getUseCase(expElement);
@@ -44,7 +44,7 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
 
     private List<String> matchWithJsonArray(int expPosition, JsonNode expElement, UseCase useCase, JsonNode actualArray) {
         List<String> diffs = new ArrayList<>();
-
+        boolean isPKChecked = false;
         for (int j = 0; j < actualArray.size(); j++) {
             if (matchedPositions.contains(j)) {
                 continue;
@@ -67,6 +67,7 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
                             if (!expPrimaryKeyValue.equals(actPrimaryKeyValue)) {
                                 continue;
                             }
+                        isPKChecked=true;
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -74,20 +75,28 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
             }
 
             List<String> elementDiffs;
+            JsonNode actElement;
             switch (useCase) {
                 case MATCH:
-                    JsonNode actElement = actualArray.get(j);
-                    elementDiffs = new JsonMatcher(expElement, actElement, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,j)).match();
+                    actElement = actualArray.get(j);
+                    elementDiffs = new JsonMatcher(expElement, actElement, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,expPosition)).match();
                     if (elementDiffs.isEmpty()) {
                         matchedPositions.add(j);
                         return Collections.emptyList();
                     } else {
-                        if (compareModes.contains(CompareMode.JSON_ARRAY_STRICT_ORDER)) {
-                            diffs.add(String.format("JSON ARRAY elements differ at position %s:" +
-                                            System.lineSeparator() + "%s" + System.lineSeparator() +
-                                            "________diffs________" + System.lineSeparator() + "%s", expPosition + 1,
-                                    MessageUtil.cropL(JSONCompare.prettyPrint(expElement)), String.join(
-                                            System.lineSeparator() + "_____________________" + System.lineSeparator(), elementDiffs)));
+                        if (compareModes.contains(CompareMode.JSON_ARRAY_STRICT_ORDER) || isPKChecked) {
+//                            diffs.add(String.format("JSON ARRAY elements differ at position %s:" +
+//                                            System.lineSeparator() + "%s" + System.lineSeparator() +
+//                                            "________diffs________" + System.lineSeparator() + "%s", expPosition + 1,
+//                                    MessageUtil.cropL(JSONCompare.prettyPrint(expElement)), String.join(
+//                                            System.lineSeparator() + "_____________________" + System.lineSeparator(), elementDiffs)));
+
+//                            My version 1----
+//                            diffs.add(String.format("%s -> JSON ARRAY elements differ at position %s:" + System.lineSeparator() + " %s" + System.lineSeparator() + "________diffs________" + System.lineSeparator() + "%s"
+//                                    , JsonUtils.getChildFlatPath(flatPath,expPosition), expPosition + 1, MessageUtil.cropL(JSONCompare.prettyPrint(expElement)), String.join(System.lineSeparator() + "_____________________" + System.lineSeparator(), elementDiffs)));
+
+//                           My version 2----
+                            diffs.addAll(elementDiffs);
                             return diffs;
                         }
                     }
@@ -98,7 +107,7 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
                 case DO_NOT_MATCH:
                     actElement = actualArray.get(j);
                     if (areOfSameType(expElement, actElement)) {
-                        elementDiffs = new JsonMatcher(expElement, actElement, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,j)).match();
+                        elementDiffs = new JsonMatcher(expElement, actElement, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,expPosition)).match();
                         if (!elementDiffs.isEmpty()) {
                             diffs.add("Expected element from position " + (expPosition + 1)
                                     + " was FOUND:" + System.lineSeparator() + MessageUtil.cropL(JSONCompare.prettyPrint(expElement)));
@@ -116,8 +125,9 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
             }
         }
         if (useCase == UseCase.MATCH) {
-            diffs.add(System.lineSeparator() + "Expected element from position " + (expPosition + 1) + " was NOT FOUND:" + System.lineSeparator()
-                    + MessageUtil.cropL(JSONCompare.prettyPrint(expElement)));
+//            diffs.add(System.lineSeparator() + "Expected element from position " + (expPosition + 1) + " was NOT FOUND:" + System.lineSeparator()
+//                    + MessageUtil.cropL(JSONCompare.prettyPrint(expElement)));
+            diffs.add(JsonUtils.getChildFlatPath(flatPath,expPosition)+" -> Expected element from position " + (expPosition + 1) + " was NOT FOUND:" + System.lineSeparator() + MessageUtil.cropL(JSONCompare.prettyPrint(expElement)));
         } else if (useCase == UseCase.MATCH_ANY) {
             diffs.add(String.format("Expected condition %s from position %s was not met." +
                     " Actual JSON ARRAY has no extra elements", expElement, expPosition + 1));

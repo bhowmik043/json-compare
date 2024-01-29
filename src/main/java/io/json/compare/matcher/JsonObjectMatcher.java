@@ -28,7 +28,7 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
 
-    System.out.println("=============>"+flatPath);
+//    System.out.println("=============>"+flatPath);
         Iterator<Map.Entry<String, JsonNode>> it = expected.fields();
         while (it.hasNext()) {
             Map.Entry<String, JsonNode> entry = it.next();
@@ -47,7 +47,8 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
 //                    jsonPathExpression.ifPresent(System.out::println);
                     if (!jsonPathExpression.isPresent()) {
                         if (candidateEntries.isEmpty()) {
-                            diffs.add(String.format("Field '%s' was NOT FOUND", expectedField));
+//                            diffs.add(String.format("Field '%s' was NOT FOUND", expectedField));
+                            diffs.add(String.format("%s -> Field '%s' was NOT FOUND", flatPath ,expectedField));
                         } else {
                             diffs.addAll(matchWithCandidates(expectedSanitizedField, expectedValue, candidateEntries));
                         }
@@ -80,8 +81,9 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                     break;
             }
         }
-        if (compareModes.contains(CompareMode.JSON_OBJECT_NON_EXTENSIBLE) && expected.size() - getDoNotMatchUseCases(expected) < actual.size()) {
-            diffs.add("Actual JSON OBJECT has extra fields");
+        if ((compareModes.contains(CompareMode.JSON_OBJECT_NON_EXTENSIBLE) || compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) && expected.size() - getDoNotMatchUseCases(expected) < actual.size()) {
+//            diffs.add("Actual JSON OBJECT has extra fields");
+            diffs.add(String.format("%s -> %s", flatPath, "Actual JSON OBJECT has extra fields"));
         }
         return diffs;
     }
@@ -105,7 +107,8 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                 matchedFieldNames.add(candidateField);
                 return Collections.emptyList();
             } else {
-                candidateDiffs.forEach(diff -> diffs.add(String.format("%s -> %s", expectedField, diff)));
+//                candidateDiffs.forEach(diff -> diffs.add(String.format("%s -> %s", expectedField, diff)));
+                candidateDiffs.forEach(diff -> diffs.add(String.format("%s", diff)));
             }
         }
         return diffs;

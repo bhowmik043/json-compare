@@ -18,8 +18,9 @@ class JsonValueMatcher extends AbstractJsonMatcher {
     @Override
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
-    System.out.println("=============>"+flatPath);
-        String diff = System.lineSeparator() + "Expected %s: %s But got: %s";
+//    System.out.println("=============>"+flatPath);
+//        String diff = System.lineSeparator() + "Expected %s: %s But got: %s";
+        String diff = flatPath+" -> Expected %s: %s But got: %s";
 
         if (expected.isNull() && !actual.isNull()) {
             diffs.add(String.format(diff, "null", "", actual));
