@@ -36,8 +36,13 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
                 diffs.addAll(matchWithJsonArray(i, expElement, useCase, actual));
             }
         }
-        if (compareModes.contains(CompareMode.JSON_ARRAY_NON_EXTENSIBLE) && expected.size() - getDoNotMatchUseCases(expected) < actual.size()) {
-            diffs.add("Actual JSON ARRAY has extra elements");
+        if ((compareModes.contains(CompareMode.JSON_ARRAY_NON_EXTENSIBLE) || compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK))) {
+            for (int j = 0; j < actual.size(); j++) {
+                if (matchedPositions.contains(j)) {
+                    continue;
+                }
+                diffs.add(JsonUtils.getChildFlatPath(flatPath,j) + " -> Actual JSON ARRAY has extra elements:"+System.lineSeparator()+JSONCompare.prettyPrint(actual.get(j)));
+            }
         }
         return diffs;
     }
@@ -68,6 +73,7 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
                                 continue;
                             }
                         isPKChecked=true;
+                        matchedPositions.add(j);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);

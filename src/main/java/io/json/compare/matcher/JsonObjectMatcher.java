@@ -3,6 +3,7 @@ package io.json.compare.matcher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.json.compare.CompareMode;
+import io.json.compare.JSONCompare;
 import io.json.compare.JsonComparator;
 import io.json.compare.util.JsonUtils;
 
@@ -50,6 +51,9 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
 //                            diffs.add(String.format("Field '%s' was NOT FOUND", expectedField));
                             diffs.add(String.format("%s -> Field '%s' was NOT FOUND", flatPath ,expectedField));
                         } else {
+                            if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
+                                matchedFieldNames.add(expectedSanitizedField);
+                            }
                             diffs.addAll(matchWithCandidates(expectedSanitizedField, expectedValue, candidateEntries));
                         }
                     } else {
@@ -81,9 +85,23 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                     break;
             }
         }
-        if ((compareModes.contains(CompareMode.JSON_OBJECT_NON_EXTENSIBLE) || compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) && expected.size() - getDoNotMatchUseCases(expected) < actual.size()) {
+        if ((compareModes.contains(CompareMode.JSON_OBJECT_NON_EXTENSIBLE) || compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK))) {
 //            diffs.add("Actual JSON OBJECT has extra fields");
-            diffs.add(String.format("%s -> %s", flatPath, "Actual JSON OBJECT has extra fields"));
+            Iterator<Map.Entry<String, JsonNode>> ita = actual.fields();
+            while (ita.hasNext()) {
+                Map.Entry<String, JsonNode> entry = ita.next();
+                String actualField = entry.getKey();
+                if (matchedFieldNames.contains(actualField)) {
+                    continue;
+                }
+                JsonNode actualValue = entry.getValue();
+        diffs.add(
+            String.format(
+                "%s -> %s:" + System.lineSeparator() + "\"" + actualField + "\": %s",
+                JsonUtils.getChildFlatPath(flatPath, actualField),
+                "Actual JSON OBJECT has extra fields",
+                JSONCompare.prettyPrint(actualValue)));
+            }
         }
         return diffs;
     }
