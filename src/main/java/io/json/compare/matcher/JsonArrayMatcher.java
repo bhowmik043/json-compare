@@ -26,7 +26,6 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
     @Override
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
-//    System.out.println("=============>"+flatPath);
         for (int i = 0; i < expected.size(); i++) {
             JsonNode expElement = expected.get(i);
             UseCase useCase = getUseCase(expElement);

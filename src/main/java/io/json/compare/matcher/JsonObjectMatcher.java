@@ -29,7 +29,6 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
     public List<String> match() {
         List<String> diffs = new ArrayList<>();
 
-//    System.out.println("=============>"+flatPath);
         Iterator<Map.Entry<String, JsonNode>> it = expected.fields();
         while (it.hasNext()) {
             Map.Entry<String, JsonNode> entry = it.next();

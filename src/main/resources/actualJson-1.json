@@ -1,0 +1,52 @@
+{
+  "k1": "v1",
+  "a1": [
+    {
+      "id": "a1v1",
+      "name":"john"
+    },
+    {
+      "id": "a1v2",
+      "name":"brad",
+      "a1_1": [
+        {
+          "id":"a1_1v1",
+          "name":"leo1",
+          "location": [
+            "blr1",
+            "chd"
+          ]
+        }
+      ],
+      "a1_2": [
+        {
+          "id":"a1_2v1",
+          "location": [
+            "ynr",
+            "kkr1"
+          ]
+        }
+      ]
+    }
+  ],
+  "a2":[
+    {
+      "id": "a2v1",
+      "name":"bruce1"
+    },
+    {
+      "id": "a2v2",
+      "name":"chad"
+    }
+  ],
+  "a3":[
+    {
+      "id": "a3v1",
+      "name":"steve"
+    },
+    {
+      "id": "a3v2",
+      "name":"tony"
+    }
+  ]
+}
