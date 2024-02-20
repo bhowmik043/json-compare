@@ -44,11 +44,13 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
             switch (fieldUseCase) {
                 case MATCH_ANY:
                 case MATCH:
-//                    jsonPathExpression.ifPresent(System.out::println);
                     if (!jsonPathExpression.isPresent()) {
                         if (candidateEntries.isEmpty()) {
-//                            diffs.add(String.format("Field '%s' was NOT FOUND", expectedField));
-                            diffs.add(String.format("%s -> Field '%s' was NOT FOUND", flatPath ,expectedField));
+                            if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
+                                diffs.add(String.format("%s -> Field '%s' was NOT FOUND", flatPath ,expectedField));
+                            } else {
+                                diffs.add(String.format("Field '%s' was NOT FOUND", expectedField));
+                            }
                         } else {
                             if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
                                 matchedFieldNames.add(expectedSanitizedField);
@@ -84,8 +86,10 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                     break;
             }
         }
-        if ((compareModes.contains(CompareMode.JSON_OBJECT_NON_EXTENSIBLE) || compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK))) {
-//            diffs.add("Actual JSON OBJECT has extra fields");
+        if (compareModes.contains(CompareMode.JSON_OBJECT_NON_EXTENSIBLE) && expected.size() - getDoNotMatchUseCases(expected) < actual.size()) {
+            diffs.add("Actual JSON OBJECT has extra fields");
+        }
+        if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
             Iterator<Map.Entry<String, JsonNode>> ita = actual.fields();
             while (ita.hasNext()) {
                 Map.Entry<String, JsonNode> entry = ita.next();
@@ -124,8 +128,11 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                 matchedFieldNames.add(candidateField);
                 return Collections.emptyList();
             } else {
-//                candidateDiffs.forEach(diff -> diffs.add(String.format("%s -> %s", expectedField, diff)));
-                candidateDiffs.forEach(diff -> diffs.add(String.format("%s", diff)));
+                if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
+                  candidateDiffs.forEach(diff -> diffs.add(String.format("%s", diff)));
+                } else {
+                  candidateDiffs.forEach(diff -> diffs.add(String.format("%s -> %s", expectedField, diff)));
+                }
             }
         }
         return diffs;

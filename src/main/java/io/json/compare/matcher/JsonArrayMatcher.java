@@ -35,7 +35,10 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
                 diffs.addAll(matchWithJsonArray(i, expElement, useCase, actual));
             }
         }
-        if ((compareModes.contains(CompareMode.JSON_ARRAY_NON_EXTENSIBLE) || compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK))) {
+        if (compareModes.contains(CompareMode.JSON_ARRAY_NON_EXTENSIBLE) && expected.size() - getDoNotMatchUseCases(expected) < actual.size()) {
+            diffs.add("Actual JSON ARRAY has extra elements");
+        }
+        if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
             for (int j = 0; j < actual.size(); j++) {
                 if (matchedPositions.contains(j)) {
                     continue;
@@ -89,19 +92,16 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
                         matchedPositions.add(j);
                         return Collections.emptyList();
                     } else {
-                        if (compareModes.contains(CompareMode.JSON_ARRAY_STRICT_ORDER) || isPKChecked) {
-//                            diffs.add(String.format("JSON ARRAY elements differ at position %s:" +
-//                                            System.lineSeparator() + "%s" + System.lineSeparator() +
-//                                            "________diffs________" + System.lineSeparator() + "%s", expPosition + 1,
-//                                    MessageUtil.cropL(JSONCompare.prettyPrint(expElement)), String.join(
-//                                            System.lineSeparator() + "_____________________" + System.lineSeparator(), elementDiffs)));
-
-//                            My version 1----
-//                            diffs.add(String.format("%s -> JSON ARRAY elements differ at position %s:" + System.lineSeparator() + " %s" + System.lineSeparator() + "________diffs________" + System.lineSeparator() + "%s"
-//                                    , JsonUtils.getChildFlatPath(flatPath,expPosition), expPosition + 1, MessageUtil.cropL(JSONCompare.prettyPrint(expElement)), String.join(System.lineSeparator() + "_____________________" + System.lineSeparator(), elementDiffs)));
-
-//                           My version 2----
+                        if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK) && isPKChecked){
                             diffs.addAll(elementDiffs);
+                            return diffs;
+                        }
+                        else if (compareModes.contains(CompareMode.JSON_ARRAY_STRICT_ORDER)) {
+                            diffs.add(String.format("JSON ARRAY elements differ at position %s:" +
+                                            System.lineSeparator() + "%s" + System.lineSeparator() +
+                                            "________diffs________" + System.lineSeparator() + "%s", expPosition + 1,
+                                    MessageUtil.cropL(JSONCompare.prettyPrint(expElement)), String.join(
+                                            System.lineSeparator() + "_____________________" + System.lineSeparator(), elementDiffs)));
                             return diffs;
                         }
                     }
@@ -130,9 +130,12 @@ class JsonArrayMatcher extends AbstractJsonMatcher {
             }
         }
         if (useCase == UseCase.MATCH) {
-//            diffs.add(System.lineSeparator() + "Expected element from position " + (expPosition + 1) + " was NOT FOUND:" + System.lineSeparator()
-//                    + MessageUtil.cropL(JSONCompare.prettyPrint(expElement)));
+            if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)){
             diffs.add(JsonUtils.getChildFlatPath(flatPath,expPosition)+" -> Expected element from position " + (expPosition + 1) + " was NOT FOUND:" + System.lineSeparator() + MessageUtil.cropL(JSONCompare.prettyPrint(expElement)));
+            } else {
+            diffs.add(System.lineSeparator() + "Expected element from position " + (expPosition + 1) + " was NOT FOUND:" + System.lineSeparator()
+                    + MessageUtil.cropL(JSONCompare.prettyPrint(expElement)));
+            }
         } else if (useCase == UseCase.MATCH_ANY) {
             diffs.add(String.format("Expected condition %s from position %s was not met." +
                     " Actual JSON ARRAY has no extra elements", expElement, expPosition + 1));
