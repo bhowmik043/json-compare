@@ -3,8 +3,11 @@ package io.json.compare.matcher;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.json.compare.CompareMode;
+import io.json.compare.JSONCompare;
 import io.json.compare.JsonComparator;
+import io.json.compare.util.JsonUtils;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -18,8 +21,8 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
 
     private final Set<String> matchedFieldNames = new HashSet<>();
 
-    JsonObjectMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes) {
-        super(expected, actual, comparator, compareModes);
+    JsonObjectMatcher(JsonNode expected, JsonNode actual, JsonComparator comparator, Set<CompareMode> compareModes, Path schemaPath, String flatPath) {
+        super(expected, actual, comparator, compareModes, schemaPath, flatPath);
     }
 
     @Override
@@ -43,13 +46,20 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                 case MATCH:
                     if (!jsonPathExpression.isPresent()) {
                         if (candidateEntries.isEmpty()) {
-                            diffs.add(String.format("Field '%s' was NOT FOUND", expectedField));
+                            if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
+                                diffs.add(String.format("%s -> Field '%s' was NOT FOUND", flatPath ,expectedField));
+                            } else {
+                                diffs.add(String.format("Field '%s' was NOT FOUND", expectedField));
+                            }
                         } else {
+                            if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
+                                matchedFieldNames.add(expectedSanitizedField);
+                            }
                             diffs.addAll(matchWithCandidates(expectedSanitizedField, expectedValue, candidateEntries));
                         }
                     } else {
                         try {
-                            diffs.addAll(new JsonPathMatcher(jsonPathExpression.get(), expectedValue, actual, comparator, compareModes).match());
+                            diffs.addAll(new JsonPathMatcher(jsonPathExpression.get(), expectedValue, actual, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,expectedField)).match());
                         } catch (PathNotFoundException e) {
                             diffs.add(String.format("Json path '%s' -> %s", jsonPathExpression.get(), e.getMessage()));
                         }
@@ -67,7 +77,7 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
                         }
                     } else {
                         try {
-                            new JsonPathMatcher(jsonPathExpression.get(), expectedValue, actual, comparator, compareModes).match();
+                            new JsonPathMatcher(jsonPathExpression.get(), expectedValue, actual, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,expectedField)).match();
                         } catch (PathNotFoundException e) {
                             break;
                         }
@@ -78,6 +88,23 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
         }
         if (compareModes.contains(CompareMode.JSON_OBJECT_NON_EXTENSIBLE) && expected.size() - getDoNotMatchUseCases(expected) < actual.size()) {
             diffs.add("Actual JSON OBJECT has extra fields");
+        }
+        if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
+            Iterator<Map.Entry<String, JsonNode>> ita = actual.fields();
+            while (ita.hasNext()) {
+                Map.Entry<String, JsonNode> entry = ita.next();
+                String actualField = entry.getKey();
+                if (matchedFieldNames.contains(actualField)) {
+                    continue;
+                }
+                JsonNode actualValue = entry.getValue();
+        diffs.add(
+            String.format(
+                "%s -> %s:" + System.lineSeparator() + "\"" + actualField + "\": %s",
+                JsonUtils.getChildFlatPath(flatPath, actualField),
+                "Actual JSON OBJECT has extra fields",
+                JSONCompare.prettyPrint(actualValue)));
+            }
         }
         return diffs;
     }
@@ -96,12 +123,16 @@ class JsonObjectMatcher extends AbstractJsonMatcher {
             }
 
             JsonNode candidateValue = candidateEntry.getValue();
-            List<String> candidateDiffs = new JsonMatcher(expectedValue, candidateValue, comparator, compareModes).match();
+            List<String> candidateDiffs = new JsonMatcher(expectedValue, candidateValue, comparator, compareModes, schemaPath, JsonUtils.getChildFlatPath(flatPath,expectedField)).match();
             if (candidateDiffs.isEmpty()) {
                 matchedFieldNames.add(candidateField);
                 return Collections.emptyList();
             } else {
-                candidateDiffs.forEach(diff -> diffs.add(String.format("%s -> %s", expectedField, diff)));
+                if (compareModes.contains(CompareMode.JSON_ARRAY_PRIMARY_KEY_CHECK)) {
+                  candidateDiffs.forEach(diff -> diffs.add(String.format("%s", diff)));
+                } else {
+                  candidateDiffs.forEach(diff -> diffs.add(String.format("%s -> %s", expectedField, diff)));
+                }
             }
         }
         return diffs;

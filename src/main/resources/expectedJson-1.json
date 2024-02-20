@@ -1,0 +1,38 @@
+{
+  "k1": "v1",
+  "a1": [
+    {
+      "id": "a1v1",
+      "name":"john"
+    },
+    {
+      "id": "a1v2",
+      "name":"brad",
+      "a1_1": [
+        {
+          "id":"a1_1v1",
+          "name":"leo",
+          "location": [
+            "blr",
+            "chd"
+          ]
+        }
+      ],
+      "a1_2": [
+        {
+          "id":"a1_2v1",
+          "location": [
+            "ynr",
+            "kkr"
+          ]
+        }
+      ]
+    }
+  ],
+  "a2":[
+    {
+      "id": "a2v1",
+      "name":"bruce"
+    }
+  ]
+}
